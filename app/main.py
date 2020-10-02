@@ -88,4 +88,4 @@ async def join(data: dict, session: Session = Depends(get_db)):
 
 if __name__ == "__main__":
     print("running?")
-    uvicorn.run(app, host="127.0.0.1", port=3003)
+    uvicorn.run(app, host="0.0.0.0", port=3003)
