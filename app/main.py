@@ -37,10 +37,8 @@ async def event_listener(event: dict):
 
 @app.post('/signup/')
 async def signup(data: dict, db: Session = Depends(get_db)):
-    print("incoming data from sign up => ", data)
     username = data['username']
     sid = data['sid']
-    print("===== signin up ====== ", username)
 
     try:
         new_user = User()
@@ -58,10 +56,34 @@ async def signup(data: dict, db: Session = Depends(get_db)):
             print(err)
 
         return ({'signup': True, 'user': {'username': username, 'sid': sid}})
+
     except Exception as err:
         print("ERROR ", err)
         db.rollback()
         return HTTPException(status_code=500, detail=err)
+
+
+@app.post('/join')
+async def join(data: dict, session: Session = Depends(get_db)):
+    username = data['username']
+    sid = data['sid']
+
+    try:
+        login_user = session.query(User).filter_by(
+            username=username).one_or_none()
+    except Exception as err:
+        print(err)
+
+    if(login_user):
+        try:
+            async with AsyncClient() as client:
+                res = await client.post(f"{carol_bus}/events",
+                                        json={"type": "userJoin", "payload": {'username': username, 'sid': sid}})
+            print("response: ", res)
+        except Exception as err:
+            print('err', err)
+    else:
+        return HTTPException(status_code=500, detail="login failed")
 
 
 if __name__ == "__main__":
