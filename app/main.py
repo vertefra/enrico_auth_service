@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from httpx import AsyncClient
 from models import User
 from database import SessionLocal, engine
@@ -11,6 +12,13 @@ import uvicorn
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(debug=True)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 carol_bus = "http://127.0.0.1:3005"
 
@@ -65,6 +73,7 @@ async def signup(data: dict, db: Session = Depends(get_db)):
 
 @app.post('/join')
 async def join(data: dict, session: Session = Depends(get_db)):
+    print("joining --> ", data)
     username = data['username']
     sid = data['sid']
 
@@ -74,6 +83,8 @@ async def join(data: dict, session: Session = Depends(get_db)):
     except Exception as err:
         print(err)
 
+    print(f"{login_user} is joining")
+
     if(login_user):
         try:
             async with AsyncClient() as client:
@@ -82,10 +93,12 @@ async def join(data: dict, session: Session = Depends(get_db)):
             print("response: ", res)
         except Exception as err:
             print('err', err)
+
+        return ({"joined": True, "username": login_user.username, 'sid': sid})
     else:
         return HTTPException(status_code=500, detail="login failed")
 
 
 if __name__ == "__main__":
     print("running?")
-    uvicorn.run(app, host="0.0.0.0", port=3003)
+    uvicorn.run(app, host="127.0.0.1", port=3003)
